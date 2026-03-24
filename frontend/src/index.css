@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#FDFDFF] text-gray-900;
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphism */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+    @apply rounded-2xl transition-all duration-300;
+  }
+
+  .glass-sidebar {
+    @apply bg-white/80 backdrop-blur-lg border-r border-gray-100/50 shadow-2xl;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-xl font-semibold transition-all duration-300 active:scale-95;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-700 hover:shadow-primary-600/40;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-300 hover:shadow-md;
+  }
+
+  /* Micro-animations */
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all;
+  }
+}
+
+@layer utilities {
+  .page-transition-enter {
+    animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  @keyframes slideUpFade {
+    0% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
