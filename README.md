@@ -5,7 +5,7 @@ A comprehensive full-stack web application for managing sports academy operation
 ## 🚀 Features
 
 ### Core Functionality
-- **Role-Based Access Control**: Admin, Coach, and Athlete roles with specific permissions ok
+- **Role-Based Access Control**: Admin, Coach, and Athlete roles with specific permissions 
 - **Athlete & Coach Management**: Complete profile management system
 - **Batch & Schedule Management**: Organize training sessions and schedules
 - **Attendance Tracking**: Session-wise attendance with statistics
