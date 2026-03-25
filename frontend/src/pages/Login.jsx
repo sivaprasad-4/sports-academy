@@ -185,15 +185,6 @@ export const Login = () => {
                         </button>
                     </form>
 
-                    <div className="mt-12 pt-8 border-t border-white/5 text-center">
-                        <p className="text-sm text-slate-500 font-medium">
-                            New Recruit?{' '}
-                            <Link to="/register" className="text-emerald-400 hover:text-emerald-300 font-black uppercase tracking-widest transition-colors inline-flex items-center gap-1 group/link">
-                                Initialize Registration
-                                <ArrowRight className="w-3 h-3 translate-y-[1px] group-hover/link:translate-x-1 transition-transform" />
-                            </Link>
-                        </p>
-                    </div>
 
                     {/* Footer Info */}
                     <div className="mt-8 text-center">
