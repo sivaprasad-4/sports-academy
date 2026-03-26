@@ -424,6 +424,16 @@ export const paymentService = {
         const response = await api.get(`/payments/history/export_csv/?type=${type}`, { responseType: 'blob' });
         return response.data;
     },
+
+    getAdminFeeAnalysis: async (athleteId) => {
+        const response = await api.get(`/payments/admin/fee-analysis/${athleteId}/`);
+        return response.data;
+    },
+
+    downloadAdminReceipt: async (paymentId) => {
+        const response = await api.get(`/payments/admin/fee-receipt/${paymentId}/`, { responseType: 'blob' });
+        return response.data;
+    },
 };
 
 export const reportService = {

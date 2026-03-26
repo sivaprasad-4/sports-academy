@@ -11,8 +11,9 @@ import {
     TrendingUp, Award, Save, Plus, User, Calendar, Activity,
     RefreshCw, ChevronUp, ChevronDown, Minus, Medal, Search, 
     ArrowRight, Info, Table, BarChart2, PieChart as PieChartIcon, 
-    Zap, Target, Clock, Filter, CheckCircle2, FileText, Printer
+    Zap, Target, Clock, Filter, CheckCircle2, FileText, Printer, Database, Trophy
 } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 
 const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -450,18 +451,17 @@ export const PerformancePage = () => {
                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Target batch selection</p>
                                     </div>
                                 </div>
-                                <div className="w-full md:w-72">
-                                    <select 
-                                        className="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary-500 outline-none transition-all appearance-none cursor-pointer"
-                                        value={selectedBatchForAnalytics} 
-                                        onChange={e => setSelectedBatchForAnalytics(e.target.value)}
-                                    >
-                                        <option value="">Full Academy Data</option>
-                                        {batches.map(b => (
-                                            <option key={b.id} value={b.id}>{b.name} • {b.sport_name}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <CustomSelect
+                                    placeholder="Full Academy Data"
+                                    icon={Filter}
+                                    options={[
+                                        { value: '', label: 'Full Academy Data' },
+                                        ...batches.map(b => ({ value: b.id, label: `${b.name} • ${b.sport_name}` }))
+                                    ]}
+                                    value={selectedBatchForAnalytics}
+                                    onChange={e => setSelectedBatchForAnalytics(e.target.value)}
+                                    className="w-full md:w-72"
+                                />
                             </div>
                         )}
 
@@ -560,26 +560,26 @@ export const PerformancePage = () => {
                                     Calculate competitive standing for the selected batch. Rankings are based on the aggregate performance index.
                                 </p>
                             </div>
-                            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-                                <select 
-                                    className="bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 min-w-[240px]" 
-                                    value={rankingBatch} 
-                                    onChange={e => setRankingBatch(e.target.value)}
-                                >
-                                    <option value="">Select Target Batch...</option>
-                                    {batches.map(b => <option key={b.id} value={b.id}>{b.name} • {b.sport_name}</option>)}
-                                </select>
-                                {rankingBatch && (
-                                    <button
-                                        onClick={() => loadRankings(rankingBatch, true)}
-                                        disabled={rankingsLoading}
-                                        className="bg-slate-900 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
-                                    >
-                                        <RefreshCw size={14} className={rankingsLoading ? 'animate-spin' : ''} />
-                                        <span>Initialize Recalculation</span>
-                                    </button>
-                                )}
-                            </div>
+                                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+                                    <CustomSelect
+                                        placeholder="Select Target Batch..."
+                                        icon={Database}
+                                        options={batches.map(b => ({ value: b.id, label: `${b.name} • ${b.sport_name}` }))}
+                                        value={rankingBatch}
+                                        onChange={e => setRankingBatch(e.target.value)}
+                                        className="min-w-[240px]"
+                                    />
+                                    {rankingBatch && (
+                                        <button
+                                            onClick={() => loadRankings(rankingBatch, true)}
+                                            disabled={rankingsLoading}
+                                            className="bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center space-x-2"
+                                        >
+                                            <RefreshCw size={14} className={rankingsLoading ? 'animate-spin' : ''} />
+                                            <span>Initialize Recalculation</span>
+                                        </button>
+                                    )}
+                                </div>
                         </div>
 
                         {rankingBatch && (
@@ -668,19 +668,17 @@ export const PerformancePage = () => {
                                                         <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Comparative Analysis</h2>
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Subject vs Batch Median</p>
                                                     </div>
-                                                    <div className="w-full md:w-64">
-                                                        <select 
-                                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500" 
-                                                            value={compAthlete} 
-                                                            onChange={e => setCompAthlete(e.target.value)}
-                                                        >
-                                                            {batchAthletes.map(a => (
-                                                                <option key={a.user.id} value={a.user.id}>
-                                                                    {a.user.first_name} {a.user.last_name}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
+                                                    <CustomSelect
+                                                        placeholder="Choose Athlete..."
+                                                        icon={User}
+                                                        options={batchAthletes.map(a => ({ 
+                                                            value: a.user.id, 
+                                                            label: `${a.user.first_name} ${a.user.last_name}` 
+                                                        }))}
+                                                        value={compAthlete}
+                                                        onChange={e => setCompAthlete(e.target.value)}
+                                                        className="w-full md:w-64"
+                                                    />
                                                 </div>
                                                 {compLoading ? (
                                                     <div className="flex justify-center py-12"><div className="w-10 h-10 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin"></div></div>
@@ -725,35 +723,23 @@ export const PerformancePage = () => {
                     <div className="space-y-8">
                         <div className="glass-card p-8 border-white/40 shadow-xl print:hidden">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">1. Select Batch</label>
-                                    <div className="relative group">
-                                        <select 
-                                            value={reportBatch} 
-                                            onChange={e => setReportBatch(e.target.value)} 
-                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer appearance-none"
-                                        >
-                                            <option value="">Choose a batch...</option>
-                                            {batches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.sport_name})</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary-500 transition-colors" size={16} />
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">2. Target Athlete</label>
-                                    <div className="relative group">
-                                        <select 
-                                            value={reportAthlete} 
-                                            onChange={e => setReportAthlete(e.target.value)} 
-                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer appearance-none disabled:opacity-50" 
-                                            disabled={!reportBatch}
-                                        >
-                                            <option value="">Choose an athlete...</option>
-                                            {reportAthletes.map(a => <option key={a.user.id} value={a.user.id}>{a.user.first_name} {a.user.last_name}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary-500" size={16} />
-                                    </div>
-                                </div>
+                                <CustomSelect
+                                    label="1. Select Batch"
+                                    placeholder="Choose a batch..."
+                                    icon={Database}
+                                    options={batches.map(b => ({ value: b.id, label: `${b.name} (${b.sport_name})` }))}
+                                    value={reportBatch}
+                                    onChange={e => setReportBatch(e.target.value)}
+                                />
+                                <CustomSelect
+                                    label="2. Target Athlete"
+                                    placeholder="Choose an athlete..."
+                                    icon={User}
+                                    options={reportAthletes.map(a => ({ value: a.user.id, label: `${a.user.first_name} ${a.user.last_name}` }))}
+                                    value={reportAthlete}
+                                    onChange={e => setReportAthlete(e.target.value)}
+                                    disabled={!reportBatch}
+                                />
                                 <button
                                     onClick={handleGenerateReport}
                                     disabled={!reportAthlete || reportLoading}
@@ -938,20 +924,14 @@ export const PerformancePage = () => {
                     <div className="space-y-8">
                         <div className="glass-card p-8 border-white/40 shadow-xl">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">1. Test Batch</label>
-                                    <div className="relative group">
-                                        <select 
-                                            value={selectedBatch} 
-                                            onChange={e => setSelectedBatch(e.target.value)} 
-                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer appearance-none"
-                                        >
-                                            <option value="">Choose a batch...</option>
-                                            {batches.map(b => <option key={b.id} value={b.id}>{b.name} ({b.sport_name})</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary-500 transition-colors" size={16} />
-                                    </div>
-                                </div>
+                                <CustomSelect
+                                    label="1. Test Batch"
+                                    placeholder="Choose a batch..."
+                                    icon={Database}
+                                    options={batches.map(b => ({ value: b.id, label: `${b.name} (${b.sport_name})` }))}
+                                    value={selectedBatch}
+                                    onChange={e => setSelectedBatch(e.target.value)}
+                                />
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center ml-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2. Test Session</label>
@@ -961,19 +941,20 @@ export const PerformancePage = () => {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="relative group">
-                                        <select 
-                                            value={selectedSession} 
-                                            onChange={e => setSelectedSession(e.target.value)} 
-                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer appearance-none disabled:opacity-50" 
-                                            disabled={!selectedBatch}
-                                        >
-                                            <option value="">Choose a session...</option>
-                                            {sessions.filter(s => { const b = batches.find(b => b.id.toString() === selectedBatch); return b && s.sport === b.sport; })
-                                                .map(s => <option key={s.id} value={s.id}>{s.name} • {s.date}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary-500" size={16} />
-                                    </div>
+                                    <CustomSelect
+                                        placeholder="Choose a session..."
+                                        icon={Clock}
+                                        options={sessions
+                                            .filter(s => { 
+                                                const b = batches.find(b => b.id.toString() === selectedBatch); 
+                                                return b && s.sport === b.sport; 
+                                            })
+                                            .map(s => ({ value: s.id, label: `${s.name} • ${s.date}` }))
+                                        }
+                                        value={selectedSession}
+                                        onChange={e => setSelectedSession(e.target.value)}
+                                        disabled={!selectedBatch}
+                                    />
                                     
                                     {showNewSessionForm && (
                                         <div className="p-4 bg-white/60 backdrop-blur-md rounded-2xl border border-white outline outline-1 outline-slate-200 shadow-2xl space-y-3 absolute z-50 left-0 right-0 top-full mt-2 mx-0 animate-in fade-in slide-in-from-top-4 duration-300">
@@ -985,21 +966,15 @@ export const PerformancePage = () => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">3. Target Metric</label>
-                                    <div className="relative group">
-                                        <select 
-                                            value={selectedMetricForRecord} 
-                                            onChange={e => setSelectedMetricForRecord(e.target.value)} 
-                                            className="w-full bg-slate-900/5 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary-500 transition-all cursor-pointer appearance-none disabled:opacity-50" 
-                                            disabled={!selectedBatch}
-                                        >
-                                            {metrics.length === 0
-                                                ? <option value="">No metrics defined</option>
-                                                : metrics.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                        </select>
-                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary-500" size={16} />
-                                    </div>
+                                <CustomSelect
+                                    label="3. Target Metric"
+                                    placeholder={metrics.length === 0 ? "No metrics defined" : "Choose a metric..."}
+                                    icon={Target}
+                                    options={metrics.map(m => ({ value: m.id, label: m.name }))}
+                                    value={selectedMetricForRecord}
+                                    onChange={e => setSelectedMetricForRecord(e.target.value)}
+                                    disabled={!selectedBatch}
+                                />
                                     {selectedMetricDetails && (
                                         <div className="mt-2 glass-card p-4 border-slate-100 bg-white/40">
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
@@ -1022,7 +997,6 @@ export const PerformancePage = () => {
                                     )}
                                 </div>
                             </div>
-                        </div>
 
                         {selectedSession && selectedMetricForRecord && athletes.length > 0 ? (
                             <div className="space-y-4">
@@ -1143,13 +1117,15 @@ export const PerformancePage = () => {
                     <div className="space-y-6">
                         <div className="card">
                             <div className="flex flex-col md:flex-row md:items-end gap-4">
-                                <div className="flex-1">
-                                    <label className="label">Select Sport</label>
-                                    <select className="input" value={adminSportId} onChange={e => setAdminSportId(e.target.value)}>
-                                        <option value="">Choose a sport...</option>
-                                        {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
+                                <CustomSelect
+                                    label="Select Sport"
+                                    placeholder="Choose a sport..."
+                                    icon={Activity}
+                                    options={sports.map(s => ({ value: s.id, label: s.name }))}
+                                    value={adminSportId}
+                                    onChange={e => setAdminSportId(e.target.value)}
+                                    className="flex-1"
+                                />
                                 {adminSportId && (
                                     <button onClick={() => setShowMetricForm(!showMetricForm)} className="btn btn-primary flex items-center gap-2">
                                         <Plus size={18} />{showMetricForm ? 'Cancel' : 'Add Metric'}

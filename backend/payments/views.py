@@ -8,12 +8,18 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from io import BytesIO
 
 from academy.models import AthleteProfile, Fee, Notification
 from .models import Payment
@@ -500,3 +506,124 @@ class PaymentHistoryViewSet(viewsets.ReadOnlyModelViewSet):
                 ])
 
         return response
+
+class AdminFeeAnalysisView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, athlete_id):
+        # Fetch all fees for the athlete
+        fees = Fee.objects.filter(athlete_id=athlete_id)
+        if not fees.exists():
+            # Check if athlete actually exists to provide better error
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            athlete = get_object_or_404(User, id=athlete_id, role='ATHLETE')
+            return Response({
+                "athlete_name": athlete.get_full_name(),
+                "total_fee": 0,
+                "paid_amount": 0,
+                "pending_amount": 0,
+                "status": "PENDING",
+                "payment_history": []
+            })
+
+        athlete = fees[0].athlete
+        total_fee = fees.aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        # SUCCESS payments for these fees (or generally for this athlete's fees)
+        success_payments = Payment.objects.filter(athlete_id=athlete_id, status='SUCCESS')
+        paid_amount = success_payments.aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        pending_amount = total_fee - paid_amount
+        
+        if pending_amount <= 0:
+            status_label = "PAID"
+        elif paid_amount > 0:
+            status_label = "PARTIAL"
+        else:
+            status_label = "PENDING"
+
+        # Payment history
+        all_payments = Payment.objects.filter(athlete_id=athlete_id).order_by('-created_at')
+        history = []
+        for p in all_payments:
+            history.append({
+                "payment_id": p.payment_id,
+                "date": p.payment_date or p.created_at,
+                "amount": float(p.amount),
+                "status": p.status,
+                "method": p.payment_method or "Online",
+                "order_id": p.razorpay_order_id
+            })
+
+        return Response({
+            "athlete_id": athlete_id,
+            "athlete_name": athlete.get_full_name(),
+            "total_fee": float(total_fee),
+            "paid_amount": float(paid_amount),
+            "pending_amount": float(pending_amount),
+            "status": status_label,
+            "payment_history": history
+        })
+
+
+class AdminFeeReceiptView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, payment_id):
+        payment = get_object_or_404(Payment.objects.select_related('athlete', 'fee__fee_structure__sport'), payment_id=payment_id)
+        
+        if payment.status != 'SUCCESS':
+            return Response({"error": "Receipt only available for successful payments"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate PDF in memory
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Header
+        p.setFont("Helvetica-Bold", 24)
+        p.drawCentredString(width/2.0, height - 60, "SPORTS ACADEMY")
+        
+        p.setFont("Helvetica-Bold", 16)
+        p.drawCentredString(width/2.0, height - 90, "OFFICIAL FEE RECEIPT")
+        
+        p.setStrokeColor(colors.black)
+        p.line(50, height - 110, width - 50, height - 110)
+
+        # Receipt Content
+        p.setFont("Helvetica", 12)
+        y = height - 150
+        
+        receipt_data = [
+            ("Athlete Name:", payment.athlete.get_full_name()),
+            ("Athlete ID:", str(payment.athlete.id)),
+            ("Sport / Discipline:", payment.fee.fee_structure.sport.name if payment.fee.fee_structure else "General"),
+            ("Fee Description:", payment.fee.description or "Training Fee"),
+            ("-----------------", "-----------------"),
+            ("Payment ID:", str(payment.payment_id)),
+            ("Razorpay Order ID:", payment.razorpay_order_id),
+            ("Razorpay Payment ID:", payment.razorpay_payment_id or "N/A"),
+            ("Amount Paid:", f"INR {payment.amount}"),
+            ("Payment Method:", payment.payment_method or "Online Gateway"),
+            ("Transaction Date:", (payment.payment_date or payment.created_at).strftime("%Y-%m-%d %H:%M:%S")),
+            ("Status:", "PAID / SUCCESSFUL"),
+        ]
+
+        for label, value in receipt_data:
+            p.drawString(100, y, label)
+            p.drawString(300, y, value)
+            y -= 25
+
+        # Footer
+        p.line(50, 100, width - 50, 100)
+        p.setFont("Helvetica-Oblique", 10)
+        p.drawCentredString(width/2.0, 80, "This is a computer-generated document. No signature is required.")
+        p.drawCentredString(width/2.0, 65, f"Generated on: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        filename = f"Receipt_{payment.athlete.username}_{payment.payment_id}.pdf"
+        return FileResponse(buffer, as_attachment=True, filename=filename, content_type='application/pdf')

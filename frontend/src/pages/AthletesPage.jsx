@@ -4,7 +4,10 @@ import { Navigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { academyService, authService } from '../services';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, Calendar, ShieldAlert, Plus, X, Edit2, Users, CheckCircle2, AlertCircle, Filter, Search as SearchIcon, Award } from 'lucide-react';
+import { User, Mail, Phone, Calendar, ShieldAlert, Plus, X, Edit2, Users, CheckCircle2, AlertCircle, Filter, Search as SearchIcon, Award, Zap } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
+import emailjs from 'emailjs-com';
+
 
 export const AthletesPage = () => {
     const { user } = useAuth();
@@ -154,12 +157,43 @@ export const AthletesPage = () => {
                 console.log('Creating profile:', profilePayload);
                 await academyService.createAthlete(profilePayload);
                 console.log('Athlete added successfully!');
+
+                // 3. Send Automated Enrollment Email
+                try {
+                    await emailjs.send(
+                        'service_l1wmrkj',
+                        'template_whont0d',
+                        {
+                            athlete_name: formData.first_name,
+                            email: formData.email,
+                            username: formData.username,
+                            password: formData.password,
+                            academy_name: "Sports Academy"
+                        },
+                        'xgmGUFOFwEkvrJWgI'
+                    );
+                    console.log('Enrollment email sent successfully');
+                    
+                    // Cleanup and reload for successful creation + email
+                    setShowModal(false);
+                    loadAthletes();
+                    alert('Athlete enrolled and email sent successfully');
+                    return;
+                } catch (emailError) {
+                    console.error('Failed to send enrollment email:', emailError);
+                    
+                    // Cleanup and reload but warn about email failure
+                    setShowModal(false);
+                    loadAthletes();
+                    alert('Athlete created, but email failed to send');
+                    return;
+                }
             }
 
-            // Cleanup and Reload
+            // Cleanup and Reload for Edit flow
             setShowModal(false);
             loadAthletes();
-            alert(`Athlete ${isEditing ? 'updated' : 'added'} successfully!`);
+            alert('Athlete updated successfully!');
 
         } catch (error) {
             console.error('Failed to save athlete:', error);
@@ -268,19 +302,17 @@ export const AthletesPage = () => {
                     </div>
                     
                     <div className="flex items-center space-x-3 w-full md:w-auto">
-                        <div className="flex items-center space-x-2 px-4 py-3 bg-slate-50 rounded-xl border-none">
-                            <Filter size={16} className="text-slate-400" />
-                            <select 
-                                value={filterBatch}
-                                onChange={(e) => setFilterBatch(e.target.value)}
-                                className="bg-transparent border-none text-sm font-bold text-slate-600 focus:ring-0 outline-none cursor-pointer min-w-[140px]"
-                            >
-                                <option value="all">All Batches</option>
-                                {batches.map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <CustomSelect
+                            placeholder="All Batches"
+                            icon={Filter}
+                            options={[
+                                { value: 'all', label: 'All Batches' },
+                                ...batches.map(b => ({ value: b.id, label: b.name }))
+                            ]}
+                            value={filterBatch}
+                            onChange={(e) => setFilterBatch(e.target.value)}
+                            className="min-w-[200px]"
+                        />
                     </div>
                 </div>
 
@@ -425,20 +457,15 @@ export const AthletesPage = () => {
                                         </div>
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Batch</label>
-                                                <select 
-                                                    name="batch" 
-                                                    value={formData.batch} 
-                                                    onChange={handleInputChange} 
-                                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                                >
-                                                    <option value="">Select Batch</option>
-                                                    {batches.map(b => (
-                                                        <option key={b.id} value={b.id}>{b.name} ({b.sport_name})</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <CustomSelect
+                                                label="Assigned Batch"
+                                                name="batch"
+                                                icon={Zap}
+                                                placeholder="Select Batch"
+                                                options={batches.map(b => ({ value: b.id, label: `${b.name} (${b.sport_name})` }))}
+                                                value={formData.batch}
+                                                onChange={handleInputChange}
+                                            />
                                             <CustomField label="Emergency Contact (Parent)" type="tel" name="emergency_contact" value={formData.emergency_contact} onChange={handleInputChange} />
                                             <CustomField label="Height (cm)" type="number" name="height" value={formData.height} onChange={handleInputChange} step="0.1" />
                                             <CustomField label="Weight (kg)" type="number" name="weight" value={formData.weight} onChange={handleInputChange} step="0.1" />

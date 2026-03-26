@@ -6,8 +6,9 @@ import {
     Megaphone, Plus, Trash2, Calendar, Users, X, 
     UserCheck, Globe, Bell, Shield, Hash,
     MoreVertical, ChevronRight, Zap, ArrowRight,
-    MessageSquare, Info, AlertCircle, User, Target
+    MessageSquare, Info, AlertCircle, User, Target, ChevronDown
 } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 
 // ── Shared UI Components ────────────────────────────────────────────────────────
 
@@ -346,37 +347,25 @@ export const AnnouncementsPage = () => {
                                     {/* Targeted Routing */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {user.role !== 'ATHLETE' && newAnnouncement.target_audience !== 'COACHES' && (
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Batch Routing (Optional)</label>
-                                                <select
-                                                    className="w-full rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-primary-500 py-4 font-bold text-slate-800 appearance-none"
-                                                    value={newAnnouncement.batch}
-                                                    onChange={e => setNewAnnouncement({...newAnnouncement, batch: e.target.value})}
-                                                >
-                                                    <option value="">Global Broadcast (Academy-Wide)</option>
-                                                    {batches.map(b => (
-                                                        <option key={b.id} value={b.id}>{b.name} – {b.sport_name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <CustomSelect
+                                                label="Batch Routing (Optional)"
+                                                placeholder="Global Broadcast (Academy-Wide)"
+                                                icon={Users}
+                                                options={batches.map(b => ({ value: b.id, label: `${b.name} – ${b.sport_name}` }))}
+                                                value={newAnnouncement.batch}
+                                                onChange={e => setNewAnnouncement({...newAnnouncement, batch: e.target.value})}
+                                            />
                                         )}
 
                                         {user.role === 'ADMIN' && newAnnouncement.target_audience === 'COACHES' && (
-                                            <div className="space-y-1.5">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Direct Coach (Optional)</label>
-                                                <select
-                                                    className="w-full rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-violet-500 py-4 font-bold text-slate-800 appearance-none"
-                                                    value={newAnnouncement.target_coach}
-                                                    onChange={e => setNewAnnouncement({...newAnnouncement, target_coach: e.target.value})}
-                                                >
-                                                    <option value="">Full Coach Network</option>
-                                                    {coaches.map(c => (
-                                                        <option key={c.id} value={c.id}>
-                                                            {c.first_name || c.username} ({c.username})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <CustomSelect
+                                                label="Direct Coach (Optional)"
+                                                placeholder="Full Coach Network"
+                                                icon={Shield}
+                                                options={coaches.map(c => ({ value: c.id, label: `${c.first_name || c.username} (${c.username})` }))}
+                                                value={newAnnouncement.target_coach}
+                                                onChange={e => setNewAnnouncement({...newAnnouncement, target_coach: e.target.value})}
+                                            />
                                         )}
                                     </div>
 

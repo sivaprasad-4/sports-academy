@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { academyService, performanceService } from '../services';
 import { useAuth } from '../context/AuthContext';
-import { Users, Plus, Calendar, Clock, Edit2, User, ExternalLink, Activity, Sun, Moon, CheckCircle2, ChevronRight, X } from 'lucide-react';
+import { Users, Plus, Calendar, Clock, Edit2, User, ExternalLink, Activity, Sun, Moon, CheckCircle2, ChevronRight, X, Zap } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 import { AthleteDetailModal } from '../components/AthleteDetailModal';
 
 export const BatchesPage = () => {
@@ -321,29 +322,22 @@ export const BatchesPage = () => {
 
                                         {user.role === 'ADMIN' && (
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sport Discipline</label>
-                                                    <select
-                                                        value={batchFormData.sport}
-                                                        onChange={(e) => setBatchFormData({ ...batchFormData, sport: e.target.value })}
-                                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                                        required
-                                                    >
-                                                        <option value="">Select Sport</option>
-                                                        {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Coach</label>
-                                                    <select
-                                                        value={batchFormData.coach}
-                                                        onChange={(e) => setBatchFormData({ ...batchFormData, coach: e.target.value })}
-                                                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                                    >
-                                                        <option value="">Optional</option>
-                                                        {coaches.map(c => <option key={c.id} value={c.user.id}>{c.user.first_name} {c.user.last_name}</option>)}
-                                                    </select>
-                                                </div>
+                                                <CustomSelect
+                                                    label="Sport Discipline"
+                                                    icon={Activity}
+                                                    placeholder="Select Sport"
+                                                    options={sports.map(s => ({ value: s.id, label: s.name }))}
+                                                    value={batchFormData.sport}
+                                                    onChange={(e) => setBatchFormData({ ...batchFormData, sport: e.target.value })}
+                                                />
+                                                <CustomSelect
+                                                    label="Assigned Coach"
+                                                    icon={User}
+                                                    placeholder="Optional"
+                                                    options={coaches.map(c => ({ value: c.user.id, label: `${c.user.first_name} ${c.user.last_name}` }))}
+                                                    value={batchFormData.coach}
+                                                    onChange={(e) => setBatchFormData({ ...batchFormData, coach: e.target.value })}
+                                                />
                                             </div>
                                         )}
 
@@ -471,20 +465,19 @@ export const BatchesPage = () => {
                                                 </div>
                                                 
                                                 <div className="flex gap-3">
-                                                    <select
+                                                    <CustomSelect
+                                                        placeholder="Select Athlete to Onboard..."
+                                                        icon={User}
+                                                        options={availableAthletes
+                                                            .filter(a => a.batch !== managingBatchId)
+                                                            .map(a => ({ 
+                                                                value: a.id, 
+                                                                label: `${a.user.first_name} ${a.user.last_name} ${a.batch_name ? `• ${a.batch_name}` : ''}` 
+                                                            }))}
                                                         value={selectedAthleteToAdd}
                                                         onChange={(e) => setSelectedAthleteToAdd(e.target.value)}
-                                                        className="flex-1 px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                                    >
-                                                        <option value="">Select Athlete to Onboard...</option>
-                                                        {availableAthletes
-                                                            .filter(a => a.batch !== managingBatchId)
-                                                            .map(a => (
-                                                                <option key={a.id} value={a.id}>
-                                                                    {a.user.first_name} {a.user.last_name} {a.batch_name ? `• ${a.batch_name}` : ''}
-                                                                </option>
-                                                            ))}
-                                                    </select>
+                                                        className="flex-1"
+                                                    />
                                                     <button
                                                         onClick={handleAddAthlete}
                                                         disabled={!selectedAthleteToAdd}

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { academyService, paymentService } from '../services';
 import { ReceiptModal } from '../components/ReceiptModal';
+import CustomSelect from '../components/CustomSelect';
 
 // ── Shared UI Components ────────────────────────────────────────────────────────
 
@@ -84,17 +85,23 @@ export const AdminFeesPage = () => {
     const [sports, setSports] = useState([]);
     const [batches, setBatches] = useState([]);
 
+    const [athleteAnalysis, setAthleteAnalysis] = useState(null);
+    const [selectedAthleteId, setSelectedAthleteId] = useState('');
+    const [fetchingAnalysis, setFetchingAnalysis] = useState(false);
+    const [athletes, setAthletes] = useState([]);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         console.log('[AdminFeesPage] Syncing financial telemetry...');
         try {
-            const [statsData, structuresData, historyData, sportsData, batchesData, feesData] = await Promise.all([
+            const [statsData, structuresData, historyData, sportsData, batchesData, feesData, athletesData] = await Promise.all([
                 paymentService.getPaymentStats(),
                 academyService.getFeeStructures(),
                 paymentService.getPaymentHistory(),
                 academyService.getSports(),
                 academyService.getBatches(),
-                academyService.getFees()
+                academyService.getFees(),
+                academyService.getAthletes()
             ]);
             setStats(statsData);
             setStructures(structuresData);
@@ -102,6 +109,7 @@ export const AdminFeesPage = () => {
             setSports(sportsData);
             setBatches(batchesData);
             setAthleteFees(feesData);
+            setAthletes(athletesData);
             console.log('[AdminFeesPage] Handshake stable. Financial Command Online.');
         } catch (error) {
             console.error('[AdminFeesPage] Telemetry sync failure:', error);
@@ -113,6 +121,38 @@ export const AdminFeesPage = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handleFetchAnalysis = async (athleteId) => {
+        if (!athleteId) {
+            setAthleteAnalysis(null);
+            return;
+        }
+        setFetchingAnalysis(true);
+        try {
+            const data = await paymentService.getAdminFeeAnalysis(athleteId);
+            setAthleteAnalysis(data);
+        } catch (error) {
+            console.error('Error fetching fee analysis');
+        } finally {
+            setFetchingAnalysis(false);
+        }
+    };
+
+    const handleDownloadReceipt = async (paymentId) => {
+        try {
+            const blob = await paymentService.downloadAdminReceipt(paymentId);
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Receipt_${paymentId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading receipt');
+        }
+    };
 
     const handleSaveStructure = async (e) => {
         e.preventDefault();
@@ -304,6 +344,7 @@ export const AdminFeesPage = () => {
                     <CommandTab active={activeTab === 'structures'} label="Plan Forge" icon={Zap} onClick={() => setActiveTab('structures')} />
                     <CommandTab active={activeTab === 'athlete fees'} label="Equity Roster" icon={Users} onClick={() => setActiveTab('athlete fees')} />
                     <CommandTab active={activeTab === 'transactions'} label="Audit Ledger" icon={FileText} onClick={() => setActiveTab('transactions')} />
+                    <CommandTab active={activeTab === 'analysis'} label="Fee Intelligence" icon={Search} onClick={() => setActiveTab('analysis')} />
                 </div>
             </GlassCard>
 
@@ -376,30 +417,24 @@ export const AdminFeesPage = () => {
 
                             <form onSubmit={handleAssignFees} className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-200 uppercase tracking-widest ml-1">Target Cluster (Batch)</label>
-                                        <select 
-                                            className="w-full h-12 px-4 bg-slate-800/80 border border-white/20 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
-                                            value={assignment.batch_id}
-                                            onChange={(e) => setAssignment({...assignment, batch_id: e.target.value})}
-                                            required
-                                        >
-                                            <option value="" className="bg-slate-900 text-slate-400">Select Cluster...</option>
-                                            {batches.map(b => <option key={b.id} value={b.id} className="bg-slate-900 text-white">{b.name} ({b.sport_name})</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-200 uppercase tracking-widest ml-1">Assigned Protocol (Plan)</label>
-                                        <select 
-                                            className="w-full h-12 px-4 bg-slate-800/80 border border-white/20 rounded-2xl text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
-                                            value={assignment.fee_structure_id}
-                                            onChange={(e) => setAssignment({...assignment, fee_structure_id: e.target.value})}
-                                            required
-                                        >
-                                            <option value="" className="bg-slate-900 text-slate-400">Select Protocol...</option>
-                                            {structures.map(s => <option key={s.id} value={s.id} className="bg-slate-900 text-white">{s.sport_name} - ₹{s.amount}</option>)}
-                                        </select>
-                                    </div>
+                                    <CustomSelect
+                                        label="Target Cluster (Batch)"
+                                        icon={Users}
+                                        placeholder="Select Cluster..."
+                                        options={batches.map(b => ({ value: b.id, label: `${b.name} (${b.sport_name})` }))}
+                                        value={assignment.batch_id}
+                                        onChange={(e) => setAssignment({...assignment, batch_id: e.target.value})}
+                                        className="text-white"
+                                    />
+                                    <CustomSelect
+                                        label="Assigned Protocol (Plan)"
+                                        icon={Zap}
+                                        placeholder="Select Protocol..."
+                                        options={structures.map(s => ({ value: s.id, label: `${s.sport_name} - ₹${s.amount}` }))}
+                                        value={assignment.fee_structure_id}
+                                        onChange={(e) => setAssignment({...assignment, fee_structure_id: e.target.value})}
+                                        className="text-white"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-200 uppercase tracking-widest ml-1">Submission Deadline (Due Date)</label>
@@ -549,6 +584,126 @@ export const AdminFeesPage = () => {
                         </div>
                     </GlassCard>
                 )}
+
+                {activeTab === 'analysis' && (
+                    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
+                        <GlassCard className="p-8">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-black text-slate-800 flex items-center gap-3">
+                                        <Search size={20} className="text-indigo-600" />
+                                        Athlete Financial Dossier
+                                    </h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select an entity for deep-dive analysis</p>
+                                </div>
+                                <div className="w-full md:w-72">
+                                    <CustomSelect
+                                        placeholder="Select Athlete..."
+                                        icon={Users}
+                                        options={athletes.map(a => ({ 
+                                            value: a.user.id, 
+                                            label: `${(a.user.first_name || a.user.last_name) ? `${a.user.first_name} ${a.user.last_name}`.trim() : a.user.username} (${a.user.username})` 
+                                        }))}
+                                        value={selectedAthleteId}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setSelectedAthleteId(val);
+                                            handleFetchAnalysis(val);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {fetchingAnalysis && (
+                                <div className="mt-12 flex flex-col items-center justify-center space-y-4">
+                                    <RefreshCw size={32} className="text-indigo-600 animate-spin" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retrieving Financial Records...</span>
+                                </div>
+                            )}
+
+                            {athleteAnalysis && !fetchingAnalysis && (
+                                <div className="mt-12 space-y-10">
+                                    {/* Analysis Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                        {[
+                                            { label: 'Total Obligations', value: `₹${athleteAnalysis.total_fee.toLocaleString()}`, color: 'text-slate-900', icon: CreditCard },
+                                            { label: 'Settled Capital', value: `₹${athleteAnalysis.paid_amount.toLocaleString()}`, color: 'text-emerald-600', icon: ShieldCheck },
+                                            { label: 'Outstanding Debt', value: `₹${athleteAnalysis.pending_amount.toLocaleString()}`, color: 'text-rose-600', icon: Activity },
+                                            { label: 'Status Protocol', value: athleteAnalysis.status, color: athleteAnalysis.status === 'PAID' ? 'text-emerald-600' : 'text-amber-600', icon: Award }
+                                        ].map((card, i) => (
+                                            <div key={i} className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <card.icon size={14} className="text-slate-400" />
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{card.label}</span>
+                                                </div>
+                                                <div className={`text-2xl font-black ${card.color} tracking-tighter`}>{card.value}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* History Ledger */}
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                                            <Clock size={14} /> Transmission History
+                                        </h4>
+                                        <div className="overflow-hidden border border-slate-100 rounded-3xl">
+                                            <table className="w-full text-left bg-white">
+                                                <thead>
+                                                    <tr className="bg-slate-50/80">
+                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Method</th>
+                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Receipt</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50">
+                                                    {athleteAnalysis.payment_history.length > 0 ? (
+                                                        athleteAnalysis.payment_history.map((p, i) => (
+                                                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                                                <td className="px-6 py-4 text-[11px] font-bold text-slate-600 ">{new Date(p.date).toLocaleDateString()}</td>
+                                                                <td className="px-6 py-4 text-sm font-black text-slate-900">₹{p.amount.toLocaleString()}</td>
+                                                                <td className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">{p.method}</td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                                                        p.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                                                                    }`}>
+                                                                        {p.status}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    {p.status === 'SUCCESS' && (
+                                                                        <button 
+                                                                            onClick={() => handleDownloadReceipt(p.payment_id)}
+                                                                            className="flex items-center gap-2 ml-auto px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg shadow-slate-200"
+                                                                        >
+                                                                            <Download size={12} /> Get Receipt
+                                                                        </button>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan="5" className="px-6 py-12 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">No transmissions recorded for this entity.</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!athleteAnalysis && !fetchingAnalysis && (
+                                <div className="mt-12 py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
+                                    <Users size={48} className="mb-4 opacity-20" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">Awaiting Entity Selection...</p>
+                                </div>
+                            )}
+                        </GlassCard>
+                    </div>
+                )}
             </div>
 
             {/* Modal for New Structure */}
@@ -560,31 +715,22 @@ export const AdminFeesPage = () => {
                             <button type="button" onClick={handleCloseModal} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-all text-xl">×</button>
                         </div>
                         <form onSubmit={handleSaveStructure} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Discipline (Sport)</label>
-                                <select 
-                                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={newStructure.sport}
-                                    onChange={(e) => setNewStructure({...newStructure, sport: e.target.value})}
-                                    required
-                                >
-                                    <option value="">Select Discipline...</option>
-                                    {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Cluster (Batch)</label>
-                                <select 
-                                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={newStructure.batch}
-                                    onChange={(e) => setNewStructure({...newStructure, batch: e.target.value})}
-                                >
-                                    <option value="">Global (All Clusters)</option>
-                                    {batches.filter(b => !newStructure.sport || b.sport == newStructure.sport).map(b => (
-                                        <option key={b.id} value={b.id}>{b.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <CustomSelect
+                                label="Target Discipline (Sport)"
+                                icon={Activity}
+                                placeholder="Select Discipline..."
+                                options={sports.map(s => ({ value: s.id, label: s.name }))}
+                                value={newStructure.sport}
+                                onChange={(e) => setNewStructure({...newStructure, sport: e.target.value})}
+                            />
+                            <CustomSelect
+                                label="Assigned Cluster (Batch)"
+                                icon={Users}
+                                placeholder="Global (All Clusters)"
+                                options={batches.filter(b => !newStructure.sport || b.sport == newStructure.sport).map(b => ({ value: b.id, label: b.name }))}
+                                value={newStructure.batch}
+                                onChange={(e) => setNewStructure({...newStructure, batch: e.target.value})}
+                            />
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Yield (Amount ₹)</label>
                                 <input 
@@ -595,19 +741,17 @@ export const AdminFeesPage = () => {
                                     required
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Billing Sequence (Cycle)</label>
-                                <select 
-                                    className="w-full h-12 px-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    value={newStructure.payment_type}
-                                    onChange={(e) => setNewStructure({...newStructure, payment_type: e.target.value})}
-                                    required
-                                >
-                                    <option value="MONTHLY">Monthly Transmissions</option>
-                                    <option value="QUARTERLY">Quarterly Cycles</option>
-                                    <option value="YEARLY">Annual Reconciliation</option>
-                                </select>
-                            </div>
+                            <CustomSelect
+                                label="Billing Sequence (Cycle)"
+                                icon={RefreshCw}
+                                options={[
+                                    { value: 'MONTHLY', label: 'Monthly Transmissions' },
+                                    { value: 'QUARTERLY', label: 'Quarterly Cycles' },
+                                    { value: 'YEARLY', label: 'Annual Reconciliation' }
+                                ]}
+                                value={newStructure.payment_type}
+                                onChange={(e) => setNewStructure({...newStructure, payment_type: e.target.value})}
+                            />
                             <div className="flex gap-4 pt-4">
                                 <button type="button" onClick={handleCloseModal} className="flex-1 h-12 text-[10px] font-black tracking-widest uppercase text-slate-500 hover:bg-slate-50 rounded-2xl transition-all">Abort</button>
                                 <button type="submit" className="flex-1 h-12 bg-indigo-600 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">Deploy Plan</button>

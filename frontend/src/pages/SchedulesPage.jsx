@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
 import { academyService } from '../services';
 import { useAuth } from '../context/AuthContext';
-import { Calendar as CalendarIcon, Clock, Plus, Filter, CheckCircle, CheckCircle2, XCircle, User, Edit2, X, Activity, Sun, Moon, MapPin, ChevronRight, Hash, CheckSquare } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, Filter, CheckCircle, CheckCircle2, XCircle, User, Edit2, X, Activity, Sun, Moon, MapPin, ChevronRight, Hash, CheckSquare, Zap } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 
 export const SchedulesPage = () => {
     const { user } = useAuth();
@@ -175,18 +176,19 @@ export const SchedulesPage = () => {
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-2 bg-white/40 backdrop-blur-md rounded-[2rem] border border-white/60 shadow-xl shadow-slate-200/50">
                     <div className="flex items-center space-x-2 pl-4">
                         {user?.role === 'ADMIN' ? (
-                            <>
-                                <Filter size={18} className="text-slate-400" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filter By Batch</span>
-                                <select
+                            <div className="flex items-center space-x-3">
+                                <CustomSelect
+                                    placeholder="All Active Batches"
+                                    icon={Filter}
+                                    options={[
+                                        { value: '', label: 'All Active Batches' },
+                                        ...batches.map(b => ({ value: b.id, label: b.name }))
+                                    ]}
                                     value={filterBatch}
                                     onChange={(e) => setFilterBatch(e.target.value)}
-                                    className="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer"
-                                >
-                                    <option value="">All Active Batches</option>
-                                    {batches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                </select>
-                            </>
+                                    className="min-w-[200px]"
+                                />
+                            </div>
                         ) : (
                             <div className="flex items-center space-x-2">
                                 <CalendarIcon size={18} className="text-slate-400" />
@@ -335,22 +337,18 @@ export const SchedulesPage = () => {
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Target Batch</label>
-                                                <select
+                                                <CustomSelect
+                                                    label="Target Batch"
+                                                    icon={Zap}
+                                                    placeholder="Select Target..."
+                                                    options={batches
+                                                        .filter(b => user.role === 'ADMIN' || (user.role === 'COACH' && b.coach === user.id))
+                                                        .map(b => ({ value: b.id, label: b.name }))
+                                                    }
                                                     value={formData.batch}
                                                     onChange={(e) => setFormData({ ...formData, batch: e.target.value })}
-                                                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                                    required
                                                     disabled={!!editingSession}
-                                                >
-                                                    <option value="">Select Target...</option>
-                                                    {batches
-                                                        .filter(b => user.role === 'ADMIN' || (user.role === 'COACH' && b.coach === user.id))
-                                                        .map(b => <option key={b.id} value={b.id}>{b.name}</option>)
-                                                    }
-                                                </select>
-                                            </div>
+                                                />
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Session Date</label>
                                                 <input
@@ -363,21 +361,17 @@ export const SchedulesPage = () => {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assigned Coach</label>
-                                            <select
+                                            <CustomSelect
+                                                label="Assigned Coach"
+                                                icon={User}
+                                                placeholder="Use Default Batch Coach"
+                                                options={coaches.map(c => ({ 
+                                                    value: c.user.id, 
+                                                    label: `${c.user.first_name} ${c.user.last_name}` 
+                                                }))}
                                                 value={formData.coach}
                                                 onChange={(e) => setFormData({ ...formData, coach: e.target.value })}
-                                                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-primary-500/5 transition-all outline-none"
-                                            >
-                                                <option value="">Use Default Batch Coach</option>
-                                                {coaches.map(c => (
-                                                    <option key={c.id} value={c.user.id}>
-                                                        {c.user.first_name} {c.user.last_name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                            />
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
