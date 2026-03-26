@@ -41,8 +41,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             validated_data['is_staff'] = True
             validated_data['is_superuser'] = True
             
-        # Generate verification token and mark unverified
-        validated_data['is_email_verified'] = False
+        # Mark as verified by default (email is sent at enrollment via EmailJS, not enforced on login)
+        validated_data['is_email_verified'] = True
         validated_data['verification_token'] = uuid.uuid4()
         validated_data['token_created_at'] = timezone.now()
         
@@ -59,14 +59,5 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         request = self.context.get('request')
         data['user'] = UserSerializer(self.user, context={'request': request}).data
-        
-        # Login Protection (Safe Implementation)
-        # Allow login only if user is an existing (legacy) user OR admin
-        # A user is considered legacy if they were created before this feature 
-        # (they won't have a token_created_at) OR if they are verified.
-        # Admins always bypass.
-        if not self.user.is_admin and not self.user.is_email_verified:
-            if self.user.token_created_at is not None:
-                raise serializers.ValidationError({"detail": "Email not verified. Please verify your email.", "unverified_email": self.user.email})
         
         return data
