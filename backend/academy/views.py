@@ -736,8 +736,21 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        # For coaches creating announcements, set the coach field
+
+        # Validation for coaches: can only send to their own batches, only to athletes
         if user.is_coach:
+            target_audience = serializer.validated_data.get('target_audience')
+            batch = serializer.validated_data.get('batch')
+
+            if target_audience != 'ATHLETES':
+                raise PermissionDenied("Coaches can only send announcements to athletes.")
+            
+            if not batch:
+                raise PermissionDenied("Coaches must select a specific batch for announcements.")
+            
+            if batch.coach != user:
+                raise PermissionDenied("You can only send announcements to your assigned batches.")
+
             announcement = serializer.save(coach=user, created_by=user)
         else:
             # Admin creating announcement

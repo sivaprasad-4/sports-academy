@@ -90,6 +90,13 @@ export const AnnouncementsPage = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        
+        // Coach restriction: MUST pick a batch
+        if (user.role === 'COACH' && !newAnnouncement.batch) {
+            alert('Pre-flight check failed: Please select a specific batch record. Coaches cannot send global transmissions.');
+            return;
+        }
+
         try {
             const data = {
                 title: newAnnouncement.title,
@@ -325,7 +332,7 @@ export const AnnouncementsPage = () => {
                                                     { value: 'ATHLETES', label: 'ATHLETES', icon: <Users size={14} /> },
                                                     { value: 'COACHES', label: 'COACHES', icon: <Shield size={14} /> },
                                                     { value: 'ALL', label: 'GLOBAL', icon: <Globe size={14} /> },
-                                                ].map(opt => (
+                                                ].filter(opt => user.role === 'ADMIN' || opt.value === 'ATHLETES').map(opt => (
                                                     <button
                                                         key={opt.value}
                                                         type="button"
@@ -348,8 +355,8 @@ export const AnnouncementsPage = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {user.role !== 'ATHLETE' && newAnnouncement.target_audience !== 'COACHES' && (
                                             <CustomSelect
-                                                label="Batch Routing (Optional)"
-                                                placeholder="Global Broadcast (Academy-Wide)"
+                                                label={user.role === 'ADMIN' ? "Batch Routing (Optional)" : "Target Batch (Required)"}
+                                                placeholder={user.role === 'ADMIN' ? "Global Broadcast (Academy-Wide)" : "Select Target Batch"}
                                                 icon={Users}
                                                 options={batches.map(b => ({ value: b.id, label: `${b.name} – ${b.sport_name}` }))}
                                                 value={newAnnouncement.batch}
