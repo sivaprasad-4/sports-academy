@@ -165,19 +165,21 @@ export const PerformancePage = () => {
         loadPerformanceData();
         loadBatches();
         loadSessions();
-        if (user.role === 'ADMIN') loadSports();
+        if (user.role === 'ADMIN' || user.role === 'COACH') loadSports();
     }, [selectedBatchForAnalytics]);
 
     useEffect(() => {
         if (selectedBatch) {
-            const batch = batches.find(b => b.id.toString() === selectedBatch);
+            const batch = batches.find(b => String(b.id) === String(selectedBatch));
             if (batch) { 
                 loadAthletes(batch.id); 
                 loadMetrics(batch.sport); 
+                // Reset session if it no longer matches the batch sport
+                setSelectedSession('');
                 // Fetch context summary for the recording tab
                 performanceService.getSummary(null, batch.id).then(setRecordSummary).catch(console.error);
             }
-        } else { setAthletes([]); setMetrics([]); setRecordSummary([]); }
+        } else { setAthletes([]); setMetrics([]); setRecordSummary([]); setSelectedSession(''); setSelectedMetricForRecord(''); }
     }, [selectedBatch, batches]);
 
     useEffect(() => {
@@ -284,7 +286,7 @@ export const PerformancePage = () => {
     const handleCreateSession = async () => {
         if (!newSessionData.name || !selectedBatch) return;
         try {
-            const batch = batches.find(b => b.id.toString() === selectedBatch);
+            const batch = batches.find(b => String(b.id) === String(selectedBatch));
             const data = await performanceService.createSession({ name: newSessionData.name, sport: batch.sport, date: newSessionData.date });
             setSessions([data, ...sessions]);
             setSelectedSession(data.id.toString());
@@ -362,15 +364,17 @@ export const PerformancePage = () => {
         </Layout>
     );
 
-    const selectedMetricDetails = metrics.find(m => m.id.toString() === selectedMetricForRecord);
+    const selectedMetricDetails = metrics.find(m => String(m.id) === String(selectedMetricForRecord));
     const tabs = user.role === 'ATHLETE'
         ? [{ key: 'analytics', label: 'Analytics' }]
         : [
             { key: 'analytics', label: '📈 Analytics' },
             { key: 'rankings', label: '🏆 Rankings' },
             { key: 'reports', label: '📑 Reports' },
-            ...(user.role === 'COACH' ? [{ key: 'record', label: '📝 Record Data' }] : []),
-            ...(user.role === 'ADMIN' ? [{ key: 'metrics', label: '⚙️ Manage Metrics' }] : []),
+            ...(user.role === 'COACH' ? [
+                { key: 'record', label: '📝 Record Data' },
+                { key: 'metrics', label: '⚙️ Manage Metrics' }
+            ] : []),
         ];
 
     return (
@@ -441,7 +445,7 @@ export const PerformancePage = () => {
                 {activeTab === 'analytics' && (
                     <div className="space-y-8">
                         {user.role !== 'ATHLETE' && (
-                            <div className="glass-card p-6 border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="glass-card p-6 border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-30">
                                 <div className="flex items-center space-x-4">
                                     <div className="p-3 bg-primary-50 rounded-xl">
                                         <Filter className="text-primary-600" size={20} />
@@ -553,7 +557,7 @@ export const PerformancePage = () => {
                 {/* ═══ Rankings Tab ════════════════════════════════════════════════════ */}
                 {activeTab === 'rankings' && (
                     <div className="space-y-8">
-                        <div className="glass-card p-8 border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div className="glass-card p-8 border-white/40 flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-30">
                             <div className="max-w-md">
                                 <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase mb-2">Leaderboard Generator</h2>
                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
@@ -721,7 +725,7 @@ export const PerformancePage = () => {
                 {/* ═══ Reports Tab ════════════════════════════════════════════════════ */}
                 {activeTab === 'reports' && (
                     <div className="space-y-8">
-                        <div className="glass-card p-8 border-white/40 shadow-xl print:hidden">
+                        <div className="glass-card p-8 border-white/40 shadow-xl print:hidden relative z-30">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
                                 <CustomSelect
                                     label="1. Select Batch"
@@ -922,7 +926,7 @@ export const PerformancePage = () => {
                 {/* ═══ Record Data Tab ════════════════════════════════════════════════ */}
                 {activeTab === 'record' && (
                     <div className="space-y-8">
-                        <div className="glass-card p-8 border-white/40 shadow-xl">
+                        <div className="glass-card p-8 border-white/40 shadow-xl relative z-30">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                 <CustomSelect
                                     label="1. Test Batch"
@@ -935,7 +939,7 @@ export const PerformancePage = () => {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center ml-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2. Test Session</label>
-                                        {selectedBatch && (
+                                        {selectedBatch && user.role === 'COACH' && (
                                             <button onClick={() => setShowNewSessionForm(!showNewSessionForm)} className="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors flex items-center">
                                                 {showNewSessionForm ? 'Cancel' : 'New Session'}
                                             </button>
@@ -946,8 +950,8 @@ export const PerformancePage = () => {
                                         icon={Clock}
                                         options={sessions
                                             .filter(s => { 
-                                                const b = batches.find(b => b.id.toString() === selectedBatch); 
-                                                return b && s.sport === b.sport; 
+                                                const b = batches.find(b => String(b.id) === String(selectedBatch)); 
+                                                return b && String(s.sport) === String(b.sport); 
                                             })
                                             .map(s => ({ value: s.id, label: `${s.name} • ${s.date}` }))
                                         }
@@ -966,17 +970,18 @@ export const PerformancePage = () => {
                                         </div>
                                     )}
                                 </div>
-                                <CustomSelect
-                                    label="3. Target Metric"
-                                    placeholder={metrics.length === 0 ? "No metrics defined" : "Choose a metric..."}
-                                    icon={Target}
-                                    options={metrics.map(m => ({ value: m.id, label: m.name }))}
-                                    value={selectedMetricForRecord}
-                                    onChange={e => setSelectedMetricForRecord(e.target.value)}
-                                    disabled={!selectedBatch}
-                                />
+                                <div className="space-y-3">
+                                    <CustomSelect
+                                        label="3. Target Metric"
+                                        placeholder={metrics.length === 0 ? "No metrics defined" : "Choose a metric..."}
+                                        icon={Target}
+                                        options={metrics.map(m => ({ value: m.id, label: m.name }))}
+                                        value={selectedMetricForRecord}
+                                        onChange={e => setSelectedMetricForRecord(e.target.value)}
+                                        disabled={!selectedBatch}
+                                    />
                                     {selectedMetricDetails && (
-                                        <div className="mt-2 glass-card p-4 border-slate-100 bg-white/40">
+                                        <div className="glass-card p-4 border-slate-100 bg-white/40">
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                                 <div>
                                                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Standard Unit</p>
@@ -995,6 +1000,7 @@ export const PerformancePage = () => {
                                             )}
                                         </div>
                                     )}
+                                </div>
                                 </div>
                             </div>
 
@@ -1113,7 +1119,7 @@ export const PerformancePage = () => {
                 )}
 
                 {/* ═══ Admin – Manage Metrics Tab ═══════════════════════════════════ */}
-                {activeTab === 'metrics' && user.role === 'ADMIN' && (
+                {activeTab === 'metrics' && user.role === 'COACH' && (
                     <div className="space-y-6">
                         <div className="card">
                             <div className="flex flex-col md:flex-row md:items-end gap-4">

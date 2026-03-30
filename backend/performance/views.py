@@ -29,6 +29,21 @@ class PerformanceMetricViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(Q(sport_id=sport_id) | Q(sport__isnull=True))
         return queryset
 
+    def perform_create(self, serializer):
+        if not self.request.user.is_coach:
+            raise PermissionDenied("Only coaches can create metrics.")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if not self.request.user.is_coach:
+            raise PermissionDenied("Only coaches can update metrics.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_coach:
+            raise PermissionDenied("Only coaches can delete metrics.")
+        instance.delete()
+
 
 class TestSessionViewSet(viewsets.ModelViewSet):
     queryset = TestSession.objects.select_related('sport', 'conducted_by').all()
@@ -40,10 +55,15 @@ class TestSessionViewSet(viewsets.ModelViewSet):
         if user.is_admin:
             return self.queryset
         elif user.is_coach:
-            return self.queryset.filter(conducted_by=user)
+            # Allow coaches to see all sessions for sports they are assigned to
+            from academy.models import Batch
+            coached_sports = Batch.objects.filter(coach=user).values_list('sport_id', flat=True)
+            return self.queryset.filter(sport_id__in=coached_sports)
         return self.queryset
 
     def perform_create(self, serializer):
+        if not self.request.user.is_coach:
+            raise PermissionDenied("Only coaches can initialize new test sessions.")
         session = serializer.save(conducted_by=self.request.user)
         
         # Notify athletes associated with this sport
@@ -203,8 +223,11 @@ class TestResultViewSet(viewsets.ModelViewSet):
 
         try:
             session = TestSession.objects.get(pk=session_id)
-            if not request.user.is_admin and session.conducted_by != request.user:
-                raise PermissionDenied("You can only submit results for sessions you conducted.")
+            if not request.user.is_admin:
+                from academy.models import Batch
+                coached_sports = Batch.objects.filter(coach=request.user).values_list('sport_id', flat=True)
+                if session.sport_id not in coached_sports:
+                    raise PermissionDenied("You can only submit results for sessions in your assigned sports.")
         except TestSession.DoesNotExist:
             return Response({'error': 'Session not found'}, status=status.HTTP_404_NOT_FOUND)
         
