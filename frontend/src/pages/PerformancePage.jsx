@@ -1038,15 +1038,34 @@ export const PerformancePage = () => {
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             {(() => {
-                                                                const athleteAttempts = sessionResults.filter(r => r.athlete === athlete.user.id);
-                                                                if (athleteAttempts.length === 0) return <span className="text-xs text-gray-300 italic block text-center">No attempts yet</span>;
+                                                                const athleteAttempts = sessionResults.filter(r => String(r.athlete) === String(athlete.user.id));
+                                                                const historical = recordSummary.find(s => 
+                                                                    String(s.athlete_id) === String(athlete.user.id) && 
+                                                                    String(s.metric_id) === String(selectedMetricForRecord)
+                                                                );
+                                                                
                                                                 return (
-                                                                    <div className="flex flex-wrap justify-center gap-1">
-                                                                        {athleteAttempts.map((r, idx) => (
-                                                                            <span key={r.id} className="inline-block bg-primary-50 text-primary-700 text-[10px] font-bold px-2 py-0.5 rounded border border-primary-100" title={r.notes}>
-                                                                                {formatValue(r.value, selectedMetricDetails?.name)}
-                                                                            </span>
-                                                                        ))}
+                                                                    <div className="flex flex-col items-center gap-2">
+                                                                        {athleteAttempts.length > 0 && (
+                                                                            <div className="flex flex-wrap justify-center gap-1">
+                                                                                <span className="text-[8px] font-black text-slate-400 uppercase w-full text-center">Session Attempts</span>
+                                                                                {athleteAttempts.map((r) => (
+                                                                                    <span key={r.id} className="inline-block bg-primary-50 text-primary-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-primary-100" title={r.notes}>
+                                                                                        {formatValue(r.value, selectedMetricDetails?.name)}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                        {historical ? (
+                                                                            <div className="flex flex-col items-center">
+                                                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Recorded</p>
+                                                                                <span className="inline-block bg-slate-100 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200">
+                                                                                    {formatValue(historical.latest_value, selectedMetricDetails?.name)}
+                                                                                </span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            athleteAttempts.length === 0 && <span className="text-xs text-slate-300 italic block text-center">No previous data</span>
+                                                                        )}
                                                                     </div>
                                                                 );
                                                             })()}
