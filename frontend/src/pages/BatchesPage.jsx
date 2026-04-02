@@ -35,6 +35,7 @@ export const BatchesPage = () => {
     // States for Athlete Profile Detail
     const [selectedAthleteIdForProfile, setSelectedAthleteIdForProfile] = useState(null);
     const [showAthleteProfileModal, setShowAthleteProfileModal] = useState(false);
+    const [manageModalWasOpen, setManageModalWasOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -520,16 +521,21 @@ export const BatchesPage = () => {
                                                                     <p className="text-[10px] text-slate-400 truncate font-medium">{athlete.user.email}</p>
                                                                 </div>
                                                             </div>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedAthleteIdForProfile(athlete.user.id);
-                                                                    setShowAthleteProfileModal(true);
-                                                                }}
-                                                                className="p-2.5 text-slate-300 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all shrink-0"
-                                                                title="View Full Profile"
-                                                            >
-                                                                <ExternalLink size={16} />
-                                                            </button>
+                                                            {athlete.user && user.role !== 'ADMIN' && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedAthleteIdForProfile(athlete.user.id);
+                                                                        // Hide manage modal first so it doesn't block the profile
+                                                                        setManageModalWasOpen(true);
+                                                                        setShowManageModal(false);
+                                                                        setShowAthleteProfileModal(true);
+                                                                    }}
+                                                                    className="p-3 text-primary-600 hover:bg-primary-50 rounded-2xl transition-all shadow-sm shadow-primary-500/5 group/link"
+                                                                    title={`View ${athlete.user.first_name}'s Profile`}
+                                                                >
+                                                                    <ExternalLink size={18} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -545,7 +551,14 @@ export const BatchesPage = () => {
                 <AthleteDetailModal 
                     athleteId={selectedAthleteIdForProfile}
                     isOpen={showAthleteProfileModal}
-                    onClose={() => setShowAthleteProfileModal(false)}
+                    onClose={() => {
+                        setShowAthleteProfileModal(false);
+                        // Restore manage modal if it was open before
+                        if (manageModalWasOpen) {
+                            setShowManageModal(true);
+                            setManageModalWasOpen(false);
+                        }
+                    }}
                 />
             </div>
         </Layout>

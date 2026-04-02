@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { 
     X, User, Calendar, BarChart2, TrendingUp, 
     CheckCircle, XCircle, Award, Activity, Send, History 
@@ -73,9 +74,8 @@ export const AthleteDetailModal = ({ athleteId, isOpen, onClose }) => {
 
             setAttendanceStats(attStats);
             setPerformanceSummary(perfSummary);
-            setAttendanceHistory(attHistory.slice(0, 10)); // Just latest 10
+            setAttendanceHistory(attHistory.length > 0 ? attHistory.slice(0, 10) : []); // Just latest 10
             
-            // Load feedback
             const feedback = await academyService.getAthleteFeedback(athleteId);
             setFeedbackHistory(feedback);
 
@@ -147,7 +147,7 @@ export const AthleteDetailModal = ({ athleteId, isOpen, onClose }) => {
         }
     };
 
-    return (
+    const modalContent = (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
             <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
                 {/* Header */}
@@ -466,4 +466,6 @@ export const AthleteDetailModal = ({ athleteId, isOpen, onClose }) => {
             </div>
         </div>
     );
+
+    return ReactDOM.createPortal(modalContent, document.body);
 };
