@@ -202,7 +202,7 @@ export const BatchesPage = () => {
                 {/* Batch Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {batches.map((batch) => {
-                        const canEdit = user.role === 'ADMIN' || (user.role === 'COACH' && batch.coach === user.id);
+                        const canEdit = user.role === 'ADMIN';
 
                         return (
                             <div key={batch.id} className="group glass-card hover-lift p-6 relative overflow-hidden flex flex-col">
@@ -432,21 +432,22 @@ export const BatchesPage = () => {
                 {/* Manage Athletes Modal */}
                 {showManageModal && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-1 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                                <div className="flex justify-between items-center mb-8">
+                        <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-1 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
+                            <button 
+                                onClick={() => setShowManageModal(false)} 
+                                className="absolute top-8 right-8 z-50 p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-2xl transition-all"
+                            >
+                                <X size={24} />
+                            </button>
+                            <div className="max-h-[90vh] overflow-y-auto custom-scrollbar">
+                                <div className="sticky top-0 bg-white z-20 px-8 pt-8 pb-6 mb-2 flex justify-between items-center border-b border-slate-100/50">
                                     <div>
                                         <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                                             {user.role === 'ADMIN' ? 'Manage Roster' : 'Athlete Directory'}
                                         </h2>
                                         <p className="text-slate-500 font-medium">Curate the community within this batch.</p>
                                     </div>
-                                    <button 
-                                        onClick={() => setShowManageModal(false)} 
-                                        className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-2xl transition-all"
-                                    >
-                                        <X size={24} />
-                                    </button>
+                                    <div className="w-12 h-12"></div> {/* Spacer for the absolute button */}
                                 </div>
 
                                 {manageLoading ? (
@@ -455,7 +456,7 @@ export const BatchesPage = () => {
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Refreshing Roster...</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-10">
+                                    <div className="p-8 pt-4 space-y-10">
                                         {user.role === 'ADMIN' && (
                                             <section>
                                                 <div className="flex items-center space-x-3 mb-6">

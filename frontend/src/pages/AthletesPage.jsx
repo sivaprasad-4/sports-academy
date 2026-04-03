@@ -405,8 +405,8 @@ export const AthletesPage = () => {
                 {showModal && (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
                         <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-1 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="p-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                                <div className="flex justify-between items-center mb-8">
+                            <div className="max-h-[90vh] overflow-y-auto custom-scrollbar">
+                                <div className="sticky top-0 bg-white z-20 px-8 pt-8 pb-6 mb-2 flex justify-between items-center border-b border-slate-100/50">
                                     <div>
                                         <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                                             {isEditing ? 'Edit Profile' : 'New Athlete'}
@@ -421,7 +421,7 @@ export const AthletesPage = () => {
                                     </button>
                                 </div>
 
-                                <form onSubmit={handleSubmit} className="space-y-10">
+                                <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-10">
                                     {/* Account Information */}
                                     <section>
                                         <div className="flex items-center space-x-3 mb-6">

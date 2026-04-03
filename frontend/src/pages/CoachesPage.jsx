@@ -269,9 +269,15 @@ export const CoachesPage = () => {
             {/* Registration Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-1 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                            <div className="flex justify-between items-center mb-8">
+                    <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-1 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
+                        <button 
+                            onClick={() => setShowModal(false)} 
+                            className="absolute top-8 right-8 z-50 p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-2xl transition-all"
+                        >
+                            <X size={24} />
+                        </button>
+                        <div className="max-h-[90vh] overflow-y-auto custom-scrollbar">
+                            <div className="sticky top-0 bg-white z-20 px-10 pt-10 pb-6 mb-2 flex justify-between items-center border-b border-slate-100/50">
                                 <div>
                                     <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                                         {editingCoach ? 'Refine Expert' : 'Provision Expert'}
@@ -280,15 +286,10 @@ export const CoachesPage = () => {
                                         {editingCoach ? 'Update professional biometric data.' : 'Deploy a new professional account.'}
                                     </p>
                                 </div>
-                                <button 
-                                    onClick={() => setShowModal(false)} 
-                                    className="p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-2xl transition-all"
-                                >
-                                    <X size={24} />
-                                </button>
+                                <div className="w-12 h-12"></div> {/* Spacer for the absolute button */}
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-8">
+                            <form onSubmit={handleSubmit} className="p-10 pt-2 space-y-8">
                                 {/* Section 1: Identity */}
                                 <div className="space-y-4">
                                     <div className="flex items-center space-x-2 mb-2">

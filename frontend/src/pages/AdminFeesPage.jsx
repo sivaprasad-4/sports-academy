@@ -5,6 +5,7 @@ import {
     Search, ChevronRight, Zap, ShieldCheck, RefreshCw, BarChart2,
     ArrowUpRight, ArrowDownRight, Activity, Award, Clock
 } from 'lucide-react';
+import { Layout } from '../components/Layout';
 import { 
     LineChart, Line, XAxis, YAxis, CartesianGrid, 
     Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
@@ -253,7 +254,8 @@ export const AdminFeesPage = () => {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+        <Layout>
+            <div className="p-6 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
             {/* Command Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-100">
                 <div className="space-y-1">
@@ -796,6 +798,7 @@ export const AdminFeesPage = () => {
                 paymentId={selectedReceipt}
             />
         </div>
+    </Layout>
     );
 };
 
