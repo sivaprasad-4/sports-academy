@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Layout } from '../components/Layout';
-import { reportService } from '../services';
+import { academyService, reportService } from '../services';
 import { useAuth } from '../context/AuthContext';
 import {
     Activity, Target, TrendingUp, Award, User, Printer, RefreshCw, MessageSquare, Star
@@ -31,12 +31,10 @@ export const MyPerformancePage = () => {
         try {
             const [data, fb] = await Promise.all([
                 reportService.getPerformanceReport(user.id),
-                reportService.getFeedback().catch(() => [])
+                academyService.getAthleteFeedback(user.id)
             ]);
             setReportData(data);
-            // Handle paginated or plain array responses
-            const fbList = Array.isArray(fb) ? fb : (fb?.results || []);
-            setFeedback(fbList);
+            setFeedback(Array.isArray(fb) ? fb : (fb?.results || []));
         } catch (err) {
             console.error('Failed to load performance report:', err);
             setError('Could not load your performance report. Please try again.');
@@ -298,73 +296,45 @@ export const MyPerformancePage = () => {
                             </p>
                         </div>
 
-                        {/* ── Coach Analysis (Now inside printable area) ── */}
-                        <div className="pt-12 border-t border-slate-100 space-y-6 page-break-before">
-                            <div className="flex items-center space-x-3">
+                        <div className="print-hidden pt-12 border-t border-slate-100 space-y-6 page-break-before">
+                            <div className="flex items-center space-x-3 mb-6">
                                 <MessageSquare size={18} className="text-primary-500" />
-                                <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Coach Analysis</h2>
-                                {feedback.length > 0 && (
-                                    <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-[9px] font-black uppercase tracking-widest">
-                                        {feedback.length} briefing{feedback.length !== 1 ? 's' : ''}
-                                    </span>
-                                )}
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Coach Feedback</h3>
                             </div>
 
                             {feedback.length === 0 ? (
                                 <div className="py-10 text-center border-dashed border-2 border-slate-100 rounded-3xl">
                                     <MessageSquare size={32} className="mx-auto text-slate-200 mb-4" />
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">No Briefings Yet</h3>
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">No feedback yet</h3>
+                                    <p className="text-[10px] text-slate-500">Your coach will provide feedback after reviewing your latest sessions.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
                                     {feedback.map((fb, i) => (
                                         <div key={i} className="glass-card p-6 border-slate-100">
                                             <div className="flex justify-between items-start mb-4">
-                                                <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg ${
-                                                    fb.is_training_instruction ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
-                                                }`}>
+                                                <span className={`inline-flex items-center space-x-2 px-3 py-1 rounded-lg ${fb.is_training_instruction ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
                                                     <span className="text-[8px] font-black uppercase tracking-widest">
-                                                        {fb.is_training_instruction ? 'Training Protocol' : 'Tactical Analysis'}
+                                                        {fb.is_training_instruction ? 'Training Instruction' : 'Coach Note'}
                                                     </span>
-                                                </div>
-                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                                </span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
                                                     {new Date(fb.created_at).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <p className="text-slate-700 text-sm italic pl-4 border-l-2 border-slate-200">
-                                                "{fb.content}"
-                                            </p>
-                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-3">
-                                                Coach: {fb.coach_name}
+                                            <p className="text-slate-700 text-sm leading-relaxed">{fb.content}</p>
+                                            <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black mt-4">
+                                                Coach: {fb.coach_name || 'Staff'}
                                             </p>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
+
                     </div>
                 )}
 
-                {/* Live-only Feedback View (for better on-screen UX) */}
-                {!loading && feedback.length > 0 && (
-                    <div className="print-hidden glass-card p-10 border-white/40 space-y-6">
-                        <div className="flex items-center space-x-3">
-                            <MessageSquare size={18} className="text-primary-500" />
-                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Coach Briefings</h2>
-                        </div>
-                        <div className="space-y-4">
-                            {feedback.map((fb, i) => (
-                                <div key={i} className="glass-card p-6 border-white/40 bg-white/30">
-                                    <p className="text-slate-700 font-medium italic">"{fb.content}"</p>
-                                    <div className="flex justify-between mt-4">
-                                        <span className="text-[9px] font-black uppercase text-primary-600 tracking-widest">{fb.coach_name}</span>
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(fb.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         </Layout>
     );

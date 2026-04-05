@@ -278,6 +278,17 @@ export const SchedulesPage = () => {
                                         </div>
                                     )}
                                     
+                                    {canEditSession(session) && !isCompleted && !session.is_cancelled && (
+                                        <button
+                                            onClick={() => handleMarkCompleted(session.id)}
+                                            className="px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-2 border border-indigo-100/50"
+                                            title="Mark as Completed"
+                                        >
+                                            <CheckSquare size={14} />
+                                            <span>Complete</span>
+                                        </button>
+                                    )}
+                                    
                                     {canEditSession(session) && !isCompleted && (
                                         <button
                                             onClick={() => handleOpenEdit(session)}
