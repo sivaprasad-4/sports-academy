@@ -104,7 +104,38 @@ export const CoachesPage = () => {
             loadCoaches();
         } catch (error) {
             console.error('Failed to save coach:', error);
-            alert(error.response?.data?.error || `Failed to ${editingCoach ? 'update' : 'create'} coach profile.`);
+            
+            let errorMessage = `Failed to ${editingCoach ? 'update' : 'create'} coach profile.`;
+            
+            if (error.response?.data) {
+                const data = error.response.data;
+                if (typeof data === 'object') {
+                    // Extract field-level errors (e.g., { "user_data": { "username": ["..."] } })
+                    const messages = [];
+                    
+                    const extractErrors = (obj, prefix = '') => {
+                        for (const key in obj) {
+                            const val = obj[key];
+                            if (Array.isArray(val)) {
+                                messages.push(`${prefix}${key}: ${val.join(', ')}`);
+                            } else if (typeof val === 'object' && val !== null) {
+                                extractErrors(val, `${key} > `);
+                            } else {
+                                messages.push(`${key}: ${val}`);
+                            }
+                        }
+                    };
+                    
+                    extractErrors(data);
+                    if (messages.length > 0) {
+                        errorMessage = messages.join('\n');
+                    }
+                } else if (typeof data === 'string' && !data.includes('<!DOCTYPE html>')) {
+                    errorMessage = data;
+                }
+            }
+            
+            alert(errorMessage);
         } finally {
             setSaving(false);
         }

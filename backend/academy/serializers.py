@@ -86,9 +86,10 @@ class AthleteProfileSerializer(serializers.ModelSerializer):
             user_instance = User.objects.create_user(password=password, **user_data)
             validated_data['user'] = user_instance
             
-        # Clean up validated_data
-        for key, value in validated_data.items():
-            if value == "":
+        # Only clean up validated_data for fields that are actually nullable
+        nullable_fields = ['batch', 'height', 'weight']
+        for key in nullable_fields:
+            if key in validated_data and validated_data[key] == "":
                 validated_data[key] = None
                 
         return super().create(validated_data)
@@ -171,9 +172,7 @@ class CoachProfileSerializer(serializers.ModelSerializer):
         elif user_id:
             validated_data['user_id'] = user_id
             
-        for key, value in validated_data.items():
-            if value == "":
-                validated_data[key] = None
+        # No specific nullable fields for CoachProfile beyond 'user' (handled by user_data).
                 
         return super().create(validated_data)
 
@@ -189,9 +188,7 @@ class CoachProfileSerializer(serializers.ModelSerializer):
                 setattr(user_instance, attr, value)
             user_instance.save()
             
-        for key, value in validated_data.items():
-            if value == "":
-                validated_data[key] = None
+        # No specific nullable fields for CoachProfile beyond 'user' (handled by user_data).
                 
         return super().update(instance, validated_data)
 
